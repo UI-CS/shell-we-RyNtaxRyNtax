@@ -9,7 +9,7 @@
 // Definition for the global flag declared in shell.h
 int shell_is_running = 1;
 
-int main(int argc, char *argv[])
+int main()
 {
     while (shell_is_running)
     {
@@ -30,10 +30,10 @@ int main(int argc, char *argv[])
         // Add the input line to the history list
         add_history(line);
         // Check for the 'exit' command
-        if (stcmp(line, "exit") == 0)
+        if (strcmp(line, "exit") == 0)
         {
             shell_is_running = 0;
-            printf("Goodbye.")
+            printf("Goodbye.");
         }
         // Free the memory allocated by readline()
         free(line);
