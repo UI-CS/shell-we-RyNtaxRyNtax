@@ -1,0 +1,9 @@
+# Binaries and Output
+/bin/
+*.o 
+*.out
+a.out
+
+# Editor files
+.vscode/
+*swp
