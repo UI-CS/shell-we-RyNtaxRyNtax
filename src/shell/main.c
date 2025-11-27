@@ -5,6 +5,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "../../include/shell/shell.h"
+#include "../../include/shell/parser.h"
 
 // Definition for the global flag declared in shell.h
 int shell_is_running = 1;
@@ -16,7 +17,7 @@ int main()
 {
     // Call the advanced signal handler setup here:
     setup_process_management();
-    
+
     while (shell_is_running)
     {
         // Read the user input, displaying "unixsh>" as the prompt
@@ -35,13 +36,24 @@ int main()
         }
         // Add the input line to the history list
         add_history(line);
-        // Check for the 'exit' command
-        if (strcmp(line, "exit") == 0)
+        // Parse the command 
+        command_t *cmd = parse_input(line);
+
+        if (cmd)
         {
-            shell_is_running = 0;
-            printf("Goodbye.");
+            // Check for the 'exit' command using the parsed argument
+            if (cmd->args[0] && strcmp(cmd->args[0], "exit") == 0)
+            {
+                shell_is_running = 0;
+                printf("Goodbye.\n");
+            }else{
+                printf("Parsed command: %s (Background: %d)\n",
+                        cmd->args[0] ? cmd->args[0] : "Empty", 
+                        cmd->is_background);
+            }
+            free_command(cmd); // Clean up the parsed command memory
         }
-        // Free the memory allocated by readline()
+        // Free the memory allocated by readline() (This remains at the end)
         free(line);
     }
     // Clean up history before exiting the program
