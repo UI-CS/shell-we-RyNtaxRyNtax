@@ -16,7 +16,8 @@ INC_DIR = include
 SHELL_TARGET = $(BIN_DIR)/unixsh
 
 # Source file for the shell core 
-SHELL_SRC = $(SRC_DIR)/shell/main.c
+SHELL_SRC = $(SRC_DIR)/shell/main.c \
+			$(SRC_DIR)/shell/proc_mgmt.c
 SHELL_OBJ = $(patsubst $(SRC_DIR)/shell/%.c, obj/%.o, $(SHELL_SRC))
 
 # Output directory for object files

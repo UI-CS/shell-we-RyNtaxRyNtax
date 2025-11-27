@@ -9,8 +9,14 @@
 // Definition for the global flag declared in shell.h
 int shell_is_running = 1;
 
+// Function prototype from proc_mgmt.c
+void setup_process_management();
+
 int main()
 {
+    // Call the advanced signal handler setup here:
+    setup_process_management();
+    
     while (shell_is_running)
     {
         // Read the user input, displaying "unixsh>" as the prompt
