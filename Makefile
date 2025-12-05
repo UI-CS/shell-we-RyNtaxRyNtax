@@ -19,7 +19,8 @@ SHELL_TARGET = $(BIN_DIR)/unixsh
 SHELL_SRC = $(SRC_DIR)/shell/main.c \
 			$(SRC_DIR)/shell/proc_mgmt.c \
 			$(SRC_DIR)/shell/parser.c \
-			$(SRC_DIR)/shell/executor.c
+			$(SRC_DIR)/shell/executor.c \
+			$(SRC_DIR)/shell/builtins.c
 SHELL_OBJ = $(patsubst $(SRC_DIR)/shell/%.c, obj/%.o, $(SHELL_SRC))
 
 # Output directory for object files

@@ -45,15 +45,7 @@ int main()
 
         if (cmd)
         {
-            // Check for the 'exit' command (Built-in)
-            if (cmd->args[0] && strcmp(cmd->args[0], "exit") == 0)
-            {
-                shell_is_running = 0;
-                printf("Goodbye.\n");
-            }else{
-                // Execute the command using fork/execvp logic
-                execute_command(cmd);
-            }
+            execute_command(cmd);
             free_command(cmd); // Clean up the parsed command memory
         }
         // Free the memory allocated by readline() (This remains at the end)

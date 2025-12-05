@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include "../../include/shell/parser.h" // For command_t structure
+#include "../../include/shell/builtins.h"
 
 // Function prototypes
 void execute_command(command_t *cmd);
@@ -21,23 +22,14 @@ void execute_command(command_t *cmd)
         return; // Empty command
     }
 
-    // External command requires fork/exec
-    execute_external_command(cmd);
-}
-
-// Built-in check
-int is_builtin_command(command_t *cmd)
-{
-    // I already handled 'exit' in main.c, but i should add others here later.
-    // For now, i only need 'exit' and this function will return 0 for everything else.
-    return 0;
-}
-
-// Built-in execution
-void execute_builtin_command(command_t *cmd)
-{
-    // Nothing here yet, as 'exit' is handled in main.c
-    (void)cmd;
+    // Check if it's a built-in first
+    if (is_builtin(cmd))
+    {
+        execute_builtin(cmd);
+    } else {
+        // Only fork for external commands
+        execute_external_command(cmd);
+    }
 }
 
 /*
