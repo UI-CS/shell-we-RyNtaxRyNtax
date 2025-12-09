@@ -1,3 +1,6 @@
+// To expose POSIX features like setenv, unsetenv
+#define _XOPEN_SOURCE 700
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -12,6 +15,8 @@ builtin_t builtins[] =
     {"pwd", builtin_pwd},
     {"help", builtin_help},
     {"exit", builtin_exit},
+    {"export", builtin_export},
+    {"unset", builtin_unset},
     {NULL, NULL}
 };
 
@@ -96,4 +101,46 @@ int builtin_exit(command_t *cmd)
     (void)cmd; //Silence unused parameter warning
     printf("Goodbye.\n");
     exit(0);
+}
+
+int builtin_export(command_t *cmd)
+{
+    if (cmd->args[1] == NULL)
+    {
+        fprintf(stderr, "unixsh: export: usage: export NAME=VALUE\n");
+        return 1;
+    }
+
+    // Look for the '=' character in the argument (e.g., "MYVAR=123")
+    char *name = cmd->args[1];
+    char *equal_sign = strchr(name, '=');
+
+    if (equal_sign != NULL)
+    {
+        *equal_sign = '\0'; // Split the string ar '='
+        char *value = equal_sign + 1; // The value starts after '='
+
+        if (setenv(name, value, 1) != 0)
+        {
+            perror("unixsh: export");
+        }
+    }else{
+        fprintf(stderr, "unixsh: export: usage: export NAME=VALUE\n");
+    }
+    return 1;
+}
+
+int builtin_unset(command_t *cmd)
+{
+    if (cmd->args[1] == NULL)
+    {
+        fprintf(stderr, "unixsh: unset: usage: unset NAME\n");
+        return 1;
+    }
+
+    if (unsetenv(cmd->args[1]) != 0)
+    {
+        perror("unixsh: unset");
+    }
+    return 1;
 }
