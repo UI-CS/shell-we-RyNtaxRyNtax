@@ -17,6 +17,9 @@ void free_command(command_t *cmd)
     {
         free(cmd->args[i]);
     }
+
+    if (cmd->input_file) free(cmd->input_file);
+    if (cmd->output_file) free(cmd->output_file);
     free(cmd);
 }
 
@@ -40,21 +43,38 @@ command_t *parse_input(const char *line)
     token = strtok(line_copy, " \t\n");
     
     while (token != NULL && i < MAX_ARGS - 1)
-    {
-        // Check for the background operator '&' at the end of the input
-        if (strcmp(token, "&") == 0)
-        {
-            // Check if '&' is the very last token
-            if (strtok(NULL, " \t\n") == NULL)
-            {
-                cmd->is_background = 1;
-                break; // Stop parsing, don't store '&'
-            }
-        }
-        cmd->args[i] = strdup(token);
-        i++;
+{
+    // 1. Check for Output Redirection
+    if (strcmp(token, ">") == 0) {
         token = strtok(NULL, " \t\n");
+        if (token) cmd->output_file = strdup(token);
+    } 
+    // 2. Check for Input Redirection
+    else if (strcmp(token, "<") == 0) {
+        token = strtok(NULL, " \t\n");
+        if (token) cmd->input_file = strdup(token);
     }
+    // 3. Handle Background Operator '&'
+    else 
+    {
+        size_t len = strlen(token);
+        // If the token IS exactly "&" or ENDS with "&" (like "sleep 5&")
+        if (token[len - 1] == '&') {
+            cmd->is_background = 1;
+            
+            if (len > 1) {
+                // Remove '&' from the string (e.g., "5&" becomes "5")
+                token[len - 1] = '\0';
+                cmd->args[i++] = strdup(token);
+            }
+            // If it was just "&", we don't add it to args, just set the flag.
+        } else {
+            // Normal argument
+            cmd->args[i++] = strdup(token);
+        }
+    }
+    token = strtok(NULL, " \t\n");
+}
 
     cmd->args[i] = NULL; // NULL-terminate the argument list
     free(line_copy);

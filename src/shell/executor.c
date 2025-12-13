@@ -3,6 +3,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <fcntl.h>
+#include <signal.h>
 #include "../../include/shell/parser.h" // For command_t structure
 #include "../../include/shell/builtins.h"
 
@@ -48,9 +50,42 @@ void execute_external_command(command_t *cmd)
     if (pid == 0)
     {
         // --- CHILD PROCESS ---
-        // Execute the command using the NULL-terminated args array
-        execvp(cmd->args[0], cmd->args);
 
+        // 1. Handle Input Redirection (<)
+        if (cmd->input_file)
+        {
+            int fd_in = open(cmd->input_file, O_RDONLY);
+            if (fd_in < 0)
+            {
+                perror("unixsh: input file");
+                exit(EXIT_FAILURE);
+            }
+            //`dup2(oldfd, newfd)` makes new `newfd` (STDIN) refer to `oldfd` (file)
+            dup2(fd_in, STDIN_FILENO);
+            close(fd_in);
+        }
+
+        // 2. Handle Output Redirection (>)
+        if (cmd->output_file)
+        {
+            // Open for writing, create if missing, truncate if exists
+            int fd_out = open(cmd->output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            if (fd_out < 0)
+            {
+                perror("unixsh: output file");
+                exit(EXIT_FAILURE);
+            }
+            // Replace STDOUT (1) with out file
+            dup2(fd_out, STDOUT_FILENO);
+            close(fd_out);
+        }
+
+        // Restore default signal handling so Ctrl+C can kill the command
+        signal(SIGINT, SIG_DFL);
+
+        // Execute the command 
+        execvp(cmd->args[0], cmd->args);
+    
         // execvp only returns if an error occurred
         perror("unixsh: command execution failed");
         // Child must exit immediately upon failure
@@ -61,7 +96,6 @@ void execute_external_command(command_t *cmd)
         {
             // Background command: Parent prints PID and returns immediately
             fprintf(stderr, "[job %d running in background]\n", pid);
-
         }else{
             // Foreground command: Parent blocks and waits for child to finish
             int status;

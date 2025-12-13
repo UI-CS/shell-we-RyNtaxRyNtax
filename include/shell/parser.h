@@ -8,6 +8,8 @@ typedef struct
 {
     char *args[MAX_ARGS]; // NULL-terminated array for execvp()
     int is_background;   // Flag for '&' execution (1 if true, 0 if false)
+    char *input_file; // For '<'
+    char *output_file; // For '>'
 } command_t;
 
 // Function to parse the input line 
