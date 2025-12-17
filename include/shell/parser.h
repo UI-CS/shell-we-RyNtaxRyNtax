@@ -4,12 +4,13 @@
 #define MAX_ARGS 64
 
 // Structure to hold the parsed command data
-typedef struct
+typedef struct command_t
 {
     char *args[MAX_ARGS]; // NULL-terminated array for execvp()
     int is_background;   // Flag for '&' execution (1 if true, 0 if false)
     char *input_file; // For '<'
     char *output_file; // For '>'
+    struct command_t *next;
 } command_t;
 
 // Function to parse the input line 

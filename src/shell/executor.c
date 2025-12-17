@@ -4,106 +4,101 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <fcntl.h>
-#include <signal.h>
 #include "../../include/shell/parser.h" // For command_t structure
 #include "../../include/shell/builtins.h"
 
-// Function prototypes
-void execute_command(command_t *cmd);
-int is_builtit_command(command_t *cmd);
-void execute_builtin_command(command_t *cmd);
-void execute_external_command(command_t *cmd);
-
-/*
-Executes a command based on its type (built-in or external)
-*/
-void execute_command(command_t *cmd)
-{
-    if (!cmd || !cmd->args[0])
-    {
-        return; // Empty command
+void execute_pipeline(command_t *cmd) {
+    int num_cmds = 0;
+    command_t *temp = cmd;
+    
+    // Count commands to determine the number of pipes needed
+    while (temp) {
+        num_cmds++;
+        temp = temp->next;
     }
 
-    // Check if it's a built-in first
-    if (is_builtin(cmd))
-    {
-        execute_builtin(cmd);
+    // Allocate 2 file descriptors (read/write) for each pipe connection
+    int pipefds[2 * (num_cmds - 1)];
+
+    for (int i = 0; i < num_cmds - 1; i++) {
+        if (pipe(pipefds + i * 2) < 0) {
+            perror("unixsh: pipe");
+            return;
+        }
+    }
+
+    int j = 0;
+    command_t *curr = cmd;
+    while (curr) {
+        pid_t pid = fork();
+        
+        if (pid == 0) {
+            // --- CHILD PROCESS ---
+
+            // Redirect STDIN to previous pipe read-end (if not first command)
+            if (j != 0) {
+                dup2(pipefds[(j - 1) * 2], STDIN_FILENO);
+            }
+
+            // Redirect STDOUT to current pipe write-end (if not last command)
+            if (curr->next) {
+                dup2(pipefds[j * 2 + 1], STDOUT_FILENO);
+            }
+
+            // Handle file redirections (Overrides pipe connections)
+            if (curr->input_file) {
+                int fd_in = open(curr->input_file, O_RDONLY);
+                if (fd_in >= 0) {
+                    dup2(fd_in, STDIN_FILENO);
+                    close(fd_in);
+                }
+            }
+            if (curr->output_file) {
+                int fd_out = open(curr->output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (fd_out >= 0) {
+                    dup2(fd_out, STDOUT_FILENO);
+                    close(fd_out);
+                }
+            }
+
+            // Close all pipe FDs in the child to prevent hanging
+            for (int i = 0; i < 2 * (num_cmds - 1); i++) {
+                close(pipefds[i]);
+            }
+
+            execvp(curr->args[0], curr->args);
+            perror("unixsh");
+            exit(EXIT_FAILURE);
+        }
+
+        curr = curr->next;
+        j++;
+    }
+
+    // --- PARENT PROCESS ---
+    
+    // Parent must close all pipe FDs so children receive EOF signals
+    for (int i = 0; i < 2 * (num_cmds - 1); i++) {
+        close(pipefds[i]);
+    }
+
+    // Wait for foreground processes; background jobs are reaped by SIGCHLD handler
+    if (!cmd->is_background) {
+        for (int i = 0; i < num_cmds; i++) {
+            wait(NULL);
+        }
     } else {
-        // Only fork for external commands
-        execute_external_command(cmd);
+        fprintf(stderr, "[Pipeline job running in background]\n");
     }
 }
 
-/*
-Handles fork, execvp, and waiting for external commands
-*/
-void execute_external_command(command_t *cmd)
-{
-    pid_t pid = fork();
+void execute_command(command_t *cmd) {
+    if (!cmd || !cmd->args[0]) return;
 
-    if (pid < 0)
-    {
-        perror("unixsh: fork failed");
-        return;
-    }
-
-    if (pid == 0)
-    {
-        // --- CHILD PROCESS ---
-
-        // 1. Handle Input Redirection (<)
-        if (cmd->input_file)
-        {
-            int fd_in = open(cmd->input_file, O_RDONLY);
-            if (fd_in < 0)
-            {
-                perror("unixsh: input file");
-                exit(EXIT_FAILURE);
-            }
-            //`dup2(oldfd, newfd)` makes new `newfd` (STDIN) refer to `oldfd` (file)
-            dup2(fd_in, STDIN_FILENO);
-            close(fd_in);
-        }
-
-        // 2. Handle Output Redirection (>)
-        if (cmd->output_file)
-        {
-            // Open for writing, create if missing, truncate if exists
-            int fd_out = open(cmd->output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-            if (fd_out < 0)
-            {
-                perror("unixsh: output file");
-                exit(EXIT_FAILURE);
-            }
-            // Replace STDOUT (1) with out file
-            dup2(fd_out, STDOUT_FILENO);
-            close(fd_out);
-        }
-
-        // Restore default signal handling so Ctrl+C can kill the command
-        signal(SIGINT, SIG_DFL);
-
-        // Execute the command 
-        execvp(cmd->args[0], cmd->args);
-    
-        // execvp only returns if an error occurred
-        perror("unixsh: command execution failed");
-        // Child must exit immediately upon failure
-        exit(EXIT_FAILURE);
-    }else{
-        // --- PARENT PROCESS --
-        if (cmd->is_background)
-        {
-            // Background command: Parent prints PID and returns immediately
-            fprintf(stderr, "[job %d running in background]\n", pid);
-        }else{
-            // Foreground command: Parent blocks and waits for child to finish
-            int status;
-            do
-            {
-                // Use waitpid to specifically wait for the foreground child
-                // Loop is important to handle signal interruptions
-            }while (waitpid(pid, &status, 0) == -1);
-        }
+    // Run built-ins in the parent ONLY if they are not part of a pipeline
+    if (cmd->next == NULL && is_builtin(cmd)) {
+        execute_builtin(cmd);
+    } else {
+        execute_pipeline(cmd);
     }
 }

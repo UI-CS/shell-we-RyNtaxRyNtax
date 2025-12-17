@@ -12,7 +12,13 @@ void free_command(command_t *cmd)
 {
     if (!cmd) return;
 
-    // Loop through the arguments array until the NULL terminator
+    // 1. Recursive call: Free the next command in the pipeline first
+    if (cmd->next)
+    {
+        free_command(cmd->next);
+    }
+
+    // 2. Free arguments of current command
     for (int i  = 0; cmd->args[i] != NULL; i++)
     {
         free(cmd->args[i]);
@@ -28,62 +34,78 @@ command_t *parse_input(const char *line)
 {
     if (!line || strlen(line) == 0) return NULL;
 
-    command_t *cmd = (command_t *)malloc(sizeof(command_t));
-    if (!cmd) return NULL;
+    // Initial command setup
+    command_t *head = (command_t *)malloc(sizeof(command_t));
+    if (!head) return NULL;
 
-    memset(cmd, 0, sizeof(command_t));
-    cmd->is_background = 0;
+    memset(head, 0, sizeof(command_t));
+    command_t *current_cmd = head;
 
     // Create a mutable copy of the input line for strtok
     char *line_copy = strdup(line);
-    char *token;
+    
+    // Tokenize using space, tab, and newline as delimiters
+    char *token = strtok(line_copy, " \t\n");
     int i = 0;
 
-    // Tokenize using space, tab, and newline as delimiters
-    token = strtok(line_copy, " \t\n");
-    
-    while (token != NULL && i < MAX_ARGS - 1)
-{
-    // 1. Check for Output Redirection
-    if (strcmp(token, ">") == 0) {
-        token = strtok(NULL, " \t\n");
-        if (token) cmd->output_file = strdup(token);
-    } 
-    // 2. Check for Input Redirection
-    else if (strcmp(token, "<") == 0) {
-        token = strtok(NULL, " \t\n");
-        if (token) cmd->input_file = strdup(token);
-    }
-    // 3. Handle Background Operator '&'
-    else 
+    while (token != NULL)
     {
-        size_t len = strlen(token);
-        // If the token IS exactly "&" or ENDS with "&" (like "sleep 5&")
-        if (token[len - 1] == '&') {
-            cmd->is_background = 1;
+        // --- PIPE DETECTION ---
+        if (strcmp(token, "|") == 0) 
+        {
+            current_cmd->args[i] = NULL; // Terminate current args
             
-            if (len > 1) {
-                // Remove '&' from the string (e.g., "5&" becomes "5")
-                token[len - 1] = '\0';
-                cmd->args[i++] = strdup(token);
-            }
-            // If it was just "&", we don't add it to args, just set the flag.
-        } else {
-            // Normal argument
-            cmd->args[i++] = strdup(token);
+            // Create next command in the chain
+            command_t *next_cmd = (command_t *)malloc(sizeof(command_t));
+            memset(next_cmd, 0, sizeof(command_t));
+            
+            current_cmd->next = next_cmd;
+            current_cmd = next_cmd; // Move pointer to the new command
+            i = 0;                  // Reset arg counter for new command
+        } 
+        // --- REDIRECTION & BACKGROUND LOGIC ---
+        else if (strcmp(token, ">") == 0) 
+        {
+            token = strtok(NULL, " \t\n");
+            if (token) current_cmd->output_file = strdup(token);
+        } 
+        else if (strcmp(token, "<") == 0) 
+        {
+            token = strtok(NULL, " \t\n");
+            if (token) current_cmd->input_file = strdup(token);
         }
+        else 
+        {
+            size_t len = strlen(token);
+            // If the token IS exactly "&" or ENDS with "&" (like "sleep 5&")
+            if (token[len - 1] == '&') 
+            {
+                // Background flag applies to the WHOLE pipeline
+                head->is_background = 1; 
+                if (len > 1) 
+                {
+                    // Remove '&' from the string (e.g., "5&" becomes "5")
+                    token[len - 1] = '\0';
+                    current_cmd->args[i++] = strdup(token);
+                }
+            } else {
+                // If it was just "&", we don't add it to args, just set the flag.
+                if (i < MAX_ARGS - 1) 
+                {
+                    current_cmd->args[i++] = strdup(token);
+                }
+            }
+        }
+        token = strtok(NULL, " \t\n");
     }
-    token = strtok(NULL, " \t\n");
-}
 
-    cmd->args[i] = NULL; // NULL-terminate the argument list
+    current_cmd->args[i] = NULL; 
     free(line_copy);
 
-    // Check if any arguments were parsed successfully
-    if (i == 0 && cmd->is_background == 0)
-    {
-        free_command(cmd); // Nothing was parsed
+    // Basic validation: ensure the first command has at least one argument
+    if (head->args[0] == NULL) {
+        free_command(head);
         return NULL;
     }
-    return cmd;
+    return head;
 }
