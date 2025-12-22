@@ -6,6 +6,7 @@
 #include <readline/history.h>
 #include "../../include/shell/shell.h"
 #include "../../include/shell/parser.h"
+#include "../../include/shell/history.h"
 
 // Definition for the global flag declared in shell.h
 int shell_is_running = 1;
@@ -18,6 +19,9 @@ void execute_command(command_t *cmd);
 
 int main()
 {
+    // Initialize history system
+    init_history();
+    
     // Call the advanced signal handler setup here:
     setup_process_management();
 
@@ -43,6 +47,12 @@ int main()
         // Parse the command 
         command_t *cmd = parse_input(line);
 
+        // Add non-empty, non-!! command to our history
+        if (cmd && strcmp(line, "!!") != 0)
+        {
+            add_to_history(line);
+        }
+
         if (cmd)
         {
             execute_command(cmd);
@@ -52,6 +62,7 @@ int main()
         free(line);
     }
     // Clean up history before exiting the program
+    free_history();
     rl_clear_history();
     return 0;
 }

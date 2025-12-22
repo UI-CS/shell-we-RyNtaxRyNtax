@@ -23,5 +23,6 @@ int builtin_help(command_t *cmd);
 int builtin_exit(command_t *cmd);
 int builtin_export(command_t *cmd);
 int builtin_unset(command_t *cmd);
+int builtin_history(command_t *cmd);
 
 #endif

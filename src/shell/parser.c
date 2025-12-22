@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../../include/shell/parser.h"
+#include "../../include/shell/history.h"
 
 // Frees all memory associated with the command_t structure
 void free_command(command_t *cmd)
@@ -34,15 +35,39 @@ command_t *parse_input(const char *line)
 {
     if (!line || strlen(line) == 0) return NULL;
 
+    char *expanded_line = NULL;
+
+    // Handle `!!` expansion
+    if (strcmp(line, "!!") == 0)
+    {
+        const char *last_cmd = get_last_command();
+        if (!last_cmd)
+        {
+            fprintf(stderr, "unixsh: !!: No previous command\n");
+            return NULL;
+        }
+    expanded_line = strdup(last_cmd);
+    fprintf(stderr, "!! -> %s\n", expanded_line); // Echo expansion
+    }else{
+        expanded_line = strdup(line);
+    }
+
+    if (!expanded_line) return NULL;
+
     // Initial command setup
     command_t *head = (command_t *)malloc(sizeof(command_t));
-    if (!head) return NULL;
+    if (!head)
+    {
+        free(expanded_line);
+        return NULL;
+    }
 
     memset(head, 0, sizeof(command_t));
     command_t *current_cmd = head;
 
     // Create a mutable copy of the input line for strtok
-    char *line_copy = strdup(line);
+    char *line_copy = strdup(expanded_line);
+    free(expanded_line);
     
     // Tokenize using space, tab, and newline as delimiters
     char *token = strtok(line_copy, " \t\n");

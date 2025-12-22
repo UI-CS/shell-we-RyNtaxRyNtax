@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "../../include/shell/builtins.h"
+#include "../../include/shell/history.h"
 
 // Array of built-in commands
 // The {NULL, NULL} at the end is the "Sentinel" that stops the loops.
@@ -17,6 +18,7 @@ builtin_t builtins[] =
     {"exit", builtin_exit},
     {"export", builtin_export},
     {"unset", builtin_unset},
+    {"history", builtin_history},
     {NULL, NULL}
 };
 
@@ -142,5 +144,12 @@ int builtin_unset(command_t *cmd)
     {
         perror("unixsh: unset");
     }
+    return 1;
+}
+
+int builtin_history(command_t *cmd)
+{
+    (void)cmd; // Silence unused parameter warning
+    print_history();
     return 1;
 }
