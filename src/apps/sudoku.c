@@ -143,7 +143,7 @@ void *validate_region(void *arg)
         if (valid)
         {
             atomic_flag_test_and_set(&row_flags[data->row]);
-            atomic_fetch_add(&valid_count, 1);
+            increment_atomic_counter(&valid_count);
         }
     } 
     else if (data->type == 1) // Validate column (type == 1)
@@ -157,7 +157,7 @@ void *validate_region(void *arg)
         if (valid)
         {
             atomic_flag_test_and_set(&col_flags[data->col]);
-            atomic_fetch_add(&valid_count, 1);
+            increment_atomic_counter(&valid_count);
         }
     }
     else // Validate subgrid (type == 2)
@@ -176,7 +176,7 @@ void *validate_region(void *arg)
         if (valid)
         {
             atomic_flag_test_and_set(&grid_flags[grid_index]);
-            atomic_fetch_add(&valid_count, 1);
+            increment_atomic_counter(&valid_count);
         }
     }
 

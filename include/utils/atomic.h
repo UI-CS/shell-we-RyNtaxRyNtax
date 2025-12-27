@@ -58,4 +58,7 @@ static inline bool atomic_cas(atomic_int *value, int expected, int new_val)
     return atomic_compare_exchange_strong(value, &expected, new_val);
 }
 
+void increment_atomic_counter(atomic_int *counter);
+void set_atomic_val(atomic_int *counter, int val);
+
 #endif

@@ -26,13 +26,19 @@ SHELL_SRC = $(SRC_DIR)/shell/main.c \
             $(SRC_DIR)/shell/history.c
 SHELL_OBJ = $(SHELL_SRC:$(SRC_DIR)/shell/%.c=obj/shell/%.o)
 
+# Utils source files
+UTILS_SRC = $(SRC_DIR)/utils/prng.c \
+			$(SRC_DIR)/utils/shared_mem.c \
+			$(SRC_DIR)/utils/atomic_ops.c
+
 # Sudoku source files (STANDALONE)
-SUDOKU_SRC = $(SRC_DIR)/apps/sudoku.c
+SUDOKU_SRC = $(SRC_DIR)/apps/sudoku.c \
+			$(SRC_DIR)/utils/atomic_ops.c
 SUDOKU_OBJ = $(SUDOKU_SRC:$(SRC_DIR)/apps/%.c=obj/apps/%.o)
 
 # Pi Estimator source files
 PI_ESTIMATOR_SRC = $(SRC_DIR)/apps/pi_estimator.c \
-                	$(SRC_DIR)/utils/prng.c
+					$(UTILS_SRC)
 PI_ESTIMATOR_OBJ = $(PI_ESTIMATOR_SRC:$(SRC_DIR)/%.c=obj/%.o)
 
 # Output directory for object files

@@ -15,6 +15,7 @@
 #include <sched.h>
 #include <getopt.h>
 #include "../../include/utils/atomic.h"
+#include "../../include/utils/utils.h"
 #include "../../include/utils/prng.h"
 
 // Macros
@@ -222,10 +223,7 @@ static double monte_carlo_processes(options_t *opts)
 
     // Create shared memory for statistics
     size_t stats_size = num_workers * sizeof(process_stats_t);
-    process_stats_t *shared_stats = mmap(NULL, stats_size,
-                                        PROT_READ | PROT_WRITE,
-                                        MAP_SHARED | MAP_ANONYMOUS,
-                                        -1, 0);
+    process_stats_t *shared_stats = create_shared_memory(stats_size);
     
     if (shared_stats == MAP_FAILED)
     {
@@ -256,6 +254,8 @@ static double monte_carlo_processes(options_t *opts)
             exit(EXIT_SUCCESS);
         }else if (pids[i] < 0)
         {
+            free(pids);
+            detach_shared_memory(shared_stats, stats_size);
             perror("fork failed");
             exit(EXIT_FAILURE);
         }
@@ -281,7 +281,8 @@ static double monte_carlo_processes(options_t *opts)
     }
 
     // Cleanup
-    munmap(shared_stats, stats_size);
+    int status = detach_shared_memory(shared_stats, stats_size);
+    if (status == -1) perror("Warning: Failed to detach shared memory");
 
     return 4.0 * (double)total_inside / (double)total_points;
 }
