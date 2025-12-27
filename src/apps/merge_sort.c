@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include "../include/utils/utils.h"
+#include "../../include/utils/utils.h"
+
+#define THRESHOLD 64
 
 // Function prototypes
 void merge(int arr[], int l, int m, int r);
@@ -40,6 +42,7 @@ int main(int argc, char *argv[])
         printf("%d ", arr[i]);
     }
     printf("\n");
+    fflush(stdout);
 
     // Perform the parallel merge sort
     merge_sort(arr, 0, n - 1);
@@ -116,6 +119,16 @@ void merge_sort(int arr[], int l, int r)
     if (l < r) 
     {
         int m = l + (r - l) / 2;
+        
+        // If the subarray is small, sort sequentially without forking
+        if (r - l < THRESHOLD) 
+        {
+            // Sequential recursive calls
+            merge_sort(arr, l, m);
+            merge_sort(arr, m + 1, r);
+            merge(arr, l, m, r);
+            return;
+        }
 
         pid_t pid1, pid2;
 

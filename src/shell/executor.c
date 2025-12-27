@@ -1,8 +1,12 @@
+#define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <fcntl.h>
 #include "../../include/shell/parser.h" // For command_t structure
 #include "../../include/shell/builtins.h"
@@ -31,6 +35,15 @@ void execute_pipeline(command_t *cmd)
         }
     }
 
+    // Block SIGCHLD to prevent race condition where signal handler reaps foreground process
+    sigset_t mask, prev;
+    if (!cmd->is_background) 
+    {
+        sigemptyset(&mask);
+        sigaddset(&mask, SIGCHLD);
+        sigprocmask(SIG_BLOCK, &mask, &prev);
+    }
+
     int j = 0;
     command_t *curr = cmd;
     while (curr) 
@@ -40,6 +53,10 @@ void execute_pipeline(command_t *cmd)
         if (pid == 0) 
         {
             // --- CHILD PROCESS ---
+            if (!cmd->is_background) 
+            {
+                sigprocmask(SIG_SETMASK, &prev, NULL); // Restore signal mask in child
+            }
 
             // Redirect STDIN to previous pipe read-end (if not first command)
             if (j != 0) 
@@ -106,6 +123,7 @@ void execute_pipeline(command_t *cmd)
         {
             wait(NULL);
         }
+        sigprocmask(SIG_SETMASK, &prev, NULL); // Restore signal mask in parent
     } else {
         fprintf(stderr, "[Pipeline job running in background]\n");
     }

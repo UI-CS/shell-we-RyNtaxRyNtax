@@ -3,7 +3,9 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <time.h>
-#include "../include/utils/utils.h"
+#include "../../include/utils/utils.h"
+
+#define THRESHOLD 64
 
 // Function prototypes
 void swap(int *a, int *b);
@@ -45,6 +47,7 @@ int main(int argc, char *argv[])
         printf("%d ", arr[i]);
     }
     printf("\n");
+    fflush(stdout);
 
     // Perform the parallel quick sort
     quick_sort(arr, 0, n - 1);
@@ -103,6 +106,15 @@ void quick_sort(int arr[], int low, int high)
     if (low < high) 
     {
         int pi = partition(arr, low, high);
+
+        // If the subarray is small, sort sequentially without forking
+        if (high - low < THRESHOLD) 
+        {
+             // Sequential recursive calls
+            quick_sort(arr, low, pi - 1);
+            quick_sort(arr, pi + 1, high);
+            return;
+        }
 
         pid_t pid1, pid2;
 

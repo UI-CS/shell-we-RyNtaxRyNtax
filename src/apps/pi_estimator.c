@@ -123,9 +123,18 @@ static void parse_args(int argc, char *argv[], options_t *opts)
             opts->num_processes = atoi(optarg);
             if (opts->num_processes < 1)
             {
-                fprintf(stderr, "Error: Number of processes must be <= 1\n");
+                fprintf(stderr, "Error: Number of processes must be >= 1\n");
                 exit(EXIT_FAILURE);
             }
+            break;
+        case 't':
+            opts->num_processes = atoi(optarg);
+            if (opts->num_processes < 1)
+            {
+                fprintf(stderr, "Error: Number of threads must be >= 1\n");
+                exit(EXIT_FAILURE);
+            }
+            opts->use_threads = 1;
             break;
         case 'i':
             opts->total_iterations = atol(optarg);
