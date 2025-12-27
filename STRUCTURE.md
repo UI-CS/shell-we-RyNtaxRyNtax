@@ -18,7 +18,8 @@
 │
 ├── /apps                         # Standalone executable applications
 │   ├── sudoku.c                  # Parallel Sudoku validator (pthreads)
-│   └── pi_estimator.c            # Monte Carlo Pi estimator (process-based)
+│   ├── pi_estimator.c		  # Monte Carlo Pi estimator (process-based)
+    └── merge_sort.c		  # Paraller Merge Sort (Fork-Join)
 │
 ├── /include                      # Header files
 │   ├── /shell                    # Shell headers
