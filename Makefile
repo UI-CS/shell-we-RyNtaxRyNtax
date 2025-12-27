@@ -16,6 +16,8 @@ INC_DIR = include
 SHELL_TARGET = $(BIN_DIR)/unixsh
 SUDOKU_TARGET = $(BIN_DIR)/sudoku_validator
 PI_ESTIMATOR_TARGET = $(BIN_DIR)/pi_estimator
+MERGE_SORT_TARGET = $(BIN_DIR)/merge_sort
+QUICK_SORT_TARGET = $(BIN_DIR)/quick_sort
 
 # Shell source files (for unixsh)
 SHELL_SRC = $(SRC_DIR)/shell/main.c \
@@ -41,11 +43,21 @@ PI_ESTIMATOR_SRC = $(SRC_DIR)/apps/pi_estimator.c \
 					$(UTILS_SRC)
 PI_ESTIMATOR_OBJ = $(PI_ESTIMATOR_SRC:$(SRC_DIR)/%.c=obj/%.o)
 
+# Merge Sort source files
+MERGE_SORT_SRC = $(SRC_DIR)/apps/merge_sort.c \
+					$(SRC_DIR)/utils/shared_mem.c
+MERGE_SORT_OBJ = $(MERGE_SORT_SRC:$(SRC_DIR)/%.c=obj/%.o)
+
+# Quick Sort source files
+QUICK_SORT_SRC = $(SRC_DIR)/apps/quick_sort.c \
+                	$(SRC_DIR)/utils/shared_mem.c
+QUICK_SORT_OBJ = $(QUICK_SORT_SRC:$(SRC_DIR)/%.c=obj/%.o)
+
 # Output directory for object files
 OBJ_DIR = obj
 
 # Default target: build everything
-all: $(SHELL_TARGET) $(SUDOKU_TARGET) $(PI_ESTIMATOR_TARGET)
+all: $(SHELL_TARGET) $(SUDOKU_TARGET) $(PI_ESTIMATOR_TARGET) $(MERGE_SORT_TARGET) $(QUICK_SORT_TARGET)
 
 # Rule to compile the main shell executable
 $(SHELL_TARGET): $(SHELL_OBJ)
@@ -61,6 +73,16 @@ $(SUDOKU_TARGET): $(SUDOKU_OBJ)
 $(PI_ESTIMATOR_TARGET): $(PI_ESTIMATOR_OBJ)
 	@mkdir -p $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ -lpthread -lm
+
+# Rule to compile the merge sort
+$(MERGE_SORT_TARGET): $(MERGE_SORT_OBJ)
+	@mkdir -p $(BIN_DIR)
+	$(CC) $(CFLAGS) $^ -o $@
+
+# Rule to compile the quick sort
+$(QUICK_SORT_TARGET): $(QUICK_SORT_OBJ)
+	@mkdir -p $(BIN_DIR)
+	$(CC) $(CFLAGS) $^ -o $@
 
 # Rule for shell object files
 obj/shell/%.o: $(SRC_DIR)/shell/%.c
@@ -86,10 +108,17 @@ test: all
 	@echo "Testing Unix Shell..."
 	@echo "echo 'Hello from shell'" | ./$(BIN_DIR)/unixsh 2>/dev/null || true
 	@echo ""
+	@echo ""
 	@echo "Testing Sudoku Validator..."
 	@./$(BIN_DIR)/sudoku_validator 2>/dev/null | head -20 || true
 	@echo ""
 	@echo "Testing Pi Estimator..."
 	@./$(BIN_DIR)/pi_estimator -p 2 -i 10000 -q 2>/dev/null || true
+	@echo ""
+	@echo "Testing Merge Sort..."
+	@./$(BIN_DIR)/merge_sort 5 2 8 1 9
+	@echo ""
+	@echo "Testing Quick Sort..."
+	@./$(BIN_DIR)/quick_sort 10 7 8 9 1 5
 # Phony targets
-.PHONY: all clean
+.PHONY: all clean test
