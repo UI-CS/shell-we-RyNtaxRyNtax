@@ -1,3 +1,6 @@
+### [🏠 Home](README.md) &nbsp;|&nbsp; [🏗️ Architecture & Structure](STRUCTURE.md) &nbsp;|&nbsp; [🎨 Design & Logic](DESIGN.md)
+
+---
 # Unix Shell Project
 
 A feature-rich Unix shell implementation in C, featuring advanced process management, parallel computing applications, and optimized algorithms.
