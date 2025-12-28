@@ -24,12 +24,12 @@ The core shell is optimized to be **non-blocking** and **constant-time** in its 
 
 ### 3.1 Command Dispatch and History
 
-| Component             | Standard Approach (Linear/Simple)                 | Advanced Approach (Optimized)             | Technical Advantage                                                                                                          |
-| :-------------------- | :------------------------------------------------ | :---------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
-| **Process Reaping**   | Polling `waitpid(..., WNOHANG)` in the main loop. | **Signal Handler (`SIGCHLD`)**            | Switches from wasteful CPU **polling** to efficient **event-driven** I/O. Guarantees immediate, non-blocking zombie cleanup. |
-| **Built-in Dispatch** | Nested `if/else if` string comparisons.           | **Hash Table Lookup (Function Pointers)** | Reduces average lookup time from $O(N)$ (linear search) to **$O(1)$ (constant time)**.                                       |
-| **Command History**   | Linear Array or Linked List.                      | **Circular Buffer (Array-based Queue)**   | Provides $O(1)$ time complexity for adding the latest command and efficient fixed-size memory management.                    |
-| **Parsing**           | `strtok()` or simple loops.                       | **Finite State Automaton (FSA) Parser**   | Faster and more robust handling of complex syntax (e.g., quotes, escapes, I/O redirection tokens) in a single pass.          |
+| Component             | Standard Approach (Linear/Simple)                 | Advanced Approach (Optimized)             | Technical Advantage                                                                                                                                |
+| :-------------------- | :------------------------------------------------ | :---------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| **Process Reaping**   | Polling `waitpid(..., WNOHANG)` in the main loop. | **Signal Handler (`SIGCHLD`)**            | Uses **event-driven** cleanup for background jobs. Foreground jobs are waited on synchronously with **signal masking** to prevent race conditions. |
+| **Built-in Dispatch** | Nested `if/else if` string comparisons.           | **Hash Table Lookup (Function Pointers)** | Reduces average lookup time from $O(N)$ (linear search) to **$O(1)$ (constant time)**.                                                             |
+| **Command History**   | Linear Array or Linked List.                      | **Circular Buffer (Array-based Queue)**   | Provides $O(1)$ time complexity for adding the latest command and efficient fixed-size memory management.                                          |
+| **Parsing**           | Manual char-by-char loops.                        | **Standard Tokenization (`strtok`)**      | Robust handling of command arguments, pipes (`                                                                                                     | `), redirections (`<`, `>`), and background flags (`&`). |
 
 ---
 
@@ -44,7 +44,14 @@ For the optional projects, the strategy shifts focus to maximizing parallel spee
 | **Parallelism** | 11 threads (1 for rows, 1 for columns, 9 for subgrids).                    | **27 Threads (Maximum Parallelism)** | Assigns a unique thread to each of the 9 rows, 9 columns, and 9 subgrids, achieving maximum concurrent execution.                      |
 | **Aggregation** | Shared global array updated with potential race conditions or Mutex locks. | **Atomic Flags / Bitmasks**          | Achieves **lock-free synchronization**. Threads use atomic operations to signal failure, eliminating kernel-level contention overhead. |
 
-### 4.2 Monte Carlo Pi Estimation
+### 4.2 Parallel Sorting (Merge Sort & Quick Sort)
+
+| Component            | Standard Approach (Naive Fork-Join)         | Advanced Approach (Optimized Hybrid) | Technical Advantage                                                                                                   |
+| :------------------- | :------------------------------------------ | :----------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| **Process Creation** | Fork for every recursive call.              | **Threshold-based Hybridization**    | Switches to sequential sorting for small subarrays (e.g., < 64 elements), preventing "fork bomb" resource exhaustion. |
+| **Memory**           | Pipe-based data transfer or massive copies. | **Shared Memory (`mmap`)**           | Zero-copy data sharing between parent and child processes.                                                            |
+
+### 4.3 Monte Carlo Pi Estimation
 
 | Component            | Standard Approach (Implied)                               | Advanced Approach (Optimized) | Technical Advantage                                                                                                                                                |
 | :------------------- | :-------------------------------------------------------- | :---------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- |

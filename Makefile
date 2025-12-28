@@ -32,16 +32,15 @@ SHELL_OBJ = $(SHELL_SRC:$(SRC_DIR)/shell/%.c=obj/shell/%.o)
 UTILS_SRC = $(SRC_DIR)/utils/prng.c \
 			$(SRC_DIR)/utils/shared_mem.c \
 			$(SRC_DIR)/utils/atomic_ops.c
+UTILS_OBJ = $(UTILS_SRC:$(SRC_DIR)/utils/%.c=obj/utils/%.o)
 
 # Sudoku source files (STANDALONE)
-SUDOKU_SRC = $(SRC_DIR)/apps/sudoku.c \
-			$(SRC_DIR)/utils/atomic_ops.c
-SUDOKU_OBJ = $(SUDOKU_SRC:$(SRC_DIR)/apps/%.c=obj/apps/%.o)
+SUDOKU_SRC = $(SRC_DIR)/apps/sudoku.c
+SUDOKU_OBJ = obj/apps/sudoku.o obj/utils/atomic_ops.o
 
 # Pi Estimator source files
-PI_ESTIMATOR_SRC = $(SRC_DIR)/apps/pi_estimator.c \
-					$(UTILS_SRC)
-PI_ESTIMATOR_OBJ = $(PI_ESTIMATOR_SRC:$(SRC_DIR)/%.c=obj/%.o)
+PI_ESTIMATOR_SRC = $(SRC_DIR)/apps/pi_estimator.c
+PI_ESTIMATOR_OBJ = obj/apps/pi_estimator.o $(UTILS_OBJ)
 
 # Merge Sort source files
 MERGE_SORT_SRC = $(SRC_DIR)/apps/merge_sort.c \
